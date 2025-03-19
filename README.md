@@ -58,10 +58,10 @@ docker run --rm \
   t360-data-search-and-publisher-app
 
 All config env variables are set with defaults, see app log:
-VEHICLE_LIST_URL = "https://sandbox-update.transfer360.dev/test_vehicles"
-SEARCH_APIS = "https://sandbox-update.transfer360.dev/test_search/acmelease","https://sandbox-update.transfer360.dev/test_search/fleetcompany",
+* VEHICLE_LIST_URL = "https://sandbox-update.transfer360.dev/test_vehicles"
+* SEARCH_APIS = "https://sandbox-update.transfer360.dev/test_search/acmelease","https://sandbox-update.transfer360.dev/test_search/fleetcompany",
 			"https://sandbox-update.transfer360.dev/test_search/hirecompany","https://sandbox-update.transfer360.dev/test_search/leasecompany"
-REQUEST_TIMEOUT = 5s
-GCP_PROJECT_ID = "your-gcp-project-id"
-PUBSUB_TOPIC = your-pubsub-topic"
-PUBSUB_EMULATOR_HOST = ""
+* REQUEST_TIMEOUT = 5s
+* GCP_PROJECT_ID = "your-gcp-project-id"
+* PUBSUB_TOPIC = your-pubsub-topic"
+* PUBSUB_EMULATOR_HOST = ""
