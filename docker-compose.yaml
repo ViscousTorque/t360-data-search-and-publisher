@@ -1,0 +1,58 @@
+services:
+  app:
+    build: .
+    environment:
+      VEHICLE_LIST_URL: "https://sandbox-update.transfer360.dev/test_vehicles"
+      SEARCH_APIS: "https://sandbox-update.transfer360.dev/test_search/acmelease, \
+                    https://sandbox-update.transfer360.dev/test_search/fleetcompany,\
+                    https://sandbox-update.transfer360.dev/test_search/hirecompany"
+      REQUEST_TIMEOUT: "2s"
+      GCP_PROJECT_ID: "my-gcp-project"
+      PUBSUB_TOPIC: "my-pubsub-topic"
+      PUBSUB_EMULATOR_HOST: "pubsub-emulator:8085"
+      GOOGLE_CLOUD_PROJECT: "my-gcp-project" 
+    depends_on:
+      - pubsub-emulator
+
+  pubsub-emulator:
+    image: google/cloud-sdk:latest
+    entrypoint: ["/bin/sh", "-c"]
+    environment:
+        PUBSUB_PROJECT_ID: "my-gcp-project"
+    command:
+      - |
+        echo "Starting Pub/Sub Emulator..."
+        gcloud beta emulators pubsub start --host-port=0.0.0.0:8085 &
+
+        # ✅ Wait for the emulator process to start
+        until pgrep -f cloud-pubsub-emulator &> /dev/null; do
+          echo "Waiting for Pub/Sub Emulator process..."
+          sleep 2
+        done
+
+        # ✅ Disable authentication
+        export CLOUDSDK_AUTH_DISABLE_CREDENTIALS=1
+        export PUBSUB_EMULATOR_HOST=localhost:8085
+        export PUBSUB_PROJECT_ID=my-gcp-project
+        gcloud config set project my-gcp-project
+
+        echo "Waiting for Pub/Sub Emulator to be fully ready..."
+        until curl --retry 10 --retry-delay 2 --retry-connrefused --connect-timeout 5 --max-time 60 -s "http://localhost:8085/v1/projects/my-gcp-project/topics" &> /dev/null; do
+          echo "Pub/Sub Emulator is not fully ready yet. Retrying..."
+          sleep 2
+        done
+
+        echo "Pub/Sub Emulator is ready!"
+        echo "Creating Pub/Sub topic my-pubsub-topic via REST API..."
+
+        until curl --retry 10 --retry-delay 2 --retry-connrefused --connect-timeout 5 --max-time 60 -X PUT "http://localhost:8085/v1/projects/my-gcp-project/topics/my-pubsub-topic" &> /dev/null; do
+          echo "Retrying topic creation..."
+          sleep 2
+        done
+
+        echo "Pub/Sub topic created successfully!"
+
+        echo "Pub/Sub Emulator is running. Keeping the container alive..."
+        tail -f /dev/null 
+    ports:
+      - "8085:8085"
