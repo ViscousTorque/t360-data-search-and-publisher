@@ -44,4 +44,24 @@ IDE vs code with relevant plugins:
         * https://cloud.google.com/pubsub/docs/overview
         * https://pkg.go.dev/cloud.google.com/go/pubsub
 
+## Testing on dev desktop
+docker compose up
 
+## Run instructions
+Update the env variables incase you need to use something other than default
+
+docker run --rm \
+  -e PUBSUB_EMULATOR_HOST=localhost:8085 \
+  -e PUBSUB_PROJECT_ID=my-gcp-project \
+  -e GCP_PROJECT_ID=my-gcp-project \
+  -e PUBSUB_TOPIC=my-pubsub-topic \
+  t360-data-search-and-publisher-app
+
+All config env variables are set with defaults, see app log:
+VEHICLE_LIST_URL = "https://sandbox-update.transfer360.dev/test_vehicles"
+SEARCH_APIS = "https://sandbox-update.transfer360.dev/test_search/acmelease","https://sandbox-update.transfer360.dev/test_search/fleetcompany",
+			"https://sandbox-update.transfer360.dev/test_search/hirecompany","https://sandbox-update.transfer360.dev/test_search/leasecompany"
+REQUEST_TIMEOUT = 5s
+GCP_PROJECT_ID = "your-gcp-project-id"
+PUBSUB_TOPIC = your-pubsub-topic"
+PUBSUB_EMULATOR_HOST = ""
