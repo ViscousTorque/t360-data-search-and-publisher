@@ -69,8 +69,8 @@ var (
 			"https://sandbox-update.transfer360.dev/test_search/fleetcompany",
 			"https://sandbox-update.transfer360.dev/test_search/hirecompany",
 			"https://sandbox-update.transfer360.dev/test_search/leasecompany"})
-	RequestTimeout     = GetEnvDuration("REQUEST_TIMEOUT", 5*time.Second)
-	GCPProjectID       = GetEnv("GCP_PROJECT_ID", "your-gcp-project-id")
-	PubSubTopic        = GetEnv("PUBSUB_TOPIC", "your-pubsub-topic")
+	RequestTimeout     = GetEnvDuration("REQUEST_TIMEOUT", 2*time.Second)
+	GCPProjectID       = GetEnv("GCP_PROJECT_ID", "my-gcp-project")
+	PubSubTopic        = GetEnv("PUBSUB_TOPIC", "my-pubsub-topic")
 	PubSubEmulatorHost = GetEnv("PUBSUB_EMULATOR_HOST", "")
 )

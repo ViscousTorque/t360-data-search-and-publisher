@@ -1,6 +1,7 @@
 package pubsub
 
 import (
+	"bytes"
 	"context"
 	"encoding/json"
 	"log"
@@ -8,44 +9,45 @@ import (
 	"time"
 
 	"main/config"
+	"main/models"
 	"main/search"
 
 	"cloud.google.com/go/pubsub"
 )
 
-type VehicleData struct {
-	VRM               string `json:"vrm"`
-	ContraventionDate string `json:"contravention_date"`
-	IsHirerVehicle    bool   `json:"is_hirer_vehicle"`
-	LeaseCompany      any    `json:"lease_company"`
+type PublishedHirerVehicle struct {
+	Reference string `json:"reference"`
+	models.VehicleData
 }
 
-func filterHirerVehicles(results []search.APIResponse) []search.APIResponse {
-	var filteredResults []search.APIResponse
-
+func filterHirerVehicles(results []search.APIResponse) (hirerVehicles []search.APIResponse, skippedErrors []search.APIResponse) {
 	for _, result := range results {
 		if result.Error != "" {
+			log.Printf("Skipping errored response from %s: %s", result.Endpoint, result.Error)
+			skippedErrors = append(skippedErrors, result)
 			continue
 		}
 
-		var vehicleData VehicleData
+		var vehicleData models.VehicleData
 		if err := json.Unmarshal([]byte(result.Data), &vehicleData); err != nil {
 			log.Printf("Skipping invalid JSON from %s: %v", result.Endpoint, err)
+			skippedErrors = append(skippedErrors, result)
 			continue
 		}
 
 		if vehicleData.IsHirerVehicle {
-			filteredResults = append(filteredResults, result)
+			hirerVehicles = append(hirerVehicles, result)
 		}
 	}
+	log.Printf("Hirer vehicles %v and skipped Errors %v", hirerVehicles, skippedErrors)
 
-	return filteredResults
+	return hirerVehicles, skippedErrors
 }
 
 func waitForPubSubTopic(ctx context.Context, client *pubsub.Client, topicName string, maxRetries int, delay time.Duration) {
 	topic := client.Topic(topicName)
 
-	for i := 0; i < maxRetries; i++ {
+	for i := range maxRetries {
 		exists, err := topic.Exists(ctx)
 		if err == nil && exists {
 			log.Printf("Pub/Sub topic %s is ready.", topicName)
@@ -75,17 +77,27 @@ func PublishToPubSub(searchRef string, results []search.APIResponse) {
 
 	waitForPubSubTopic(ctx, client, config.PubSubTopic, 10, 2*time.Second)
 
-	filteredResults := filterHirerVehicles(results)
+	hirers, skipped := filterHirerVehicles(results)
 
-	if len(filteredResults) == 0 {
+	log.Printf("Skipped %d responses", len(skipped))
+
+	if len(hirers) == 0 {
 		log.Println("No valid results to publish.")
 		return
 	}
 
-	message, err := json.Marshal(map[string]any{
-		"reference": searchRef,
-		"results":   filteredResults,
-	})
+	var vehicle models.VehicleData
+	err = json.Unmarshal([]byte(hirers[0].Data), &vehicle)
+	if err != nil {
+		log.Fatalf("Invalid VehicleData in APIResponse from %s: %v", hirers[0].Endpoint, err)
+	}
+
+	msg := PublishedHirerVehicle{
+		Reference:   searchRef,
+		VehicleData: vehicle,
+	}
+
+	message, err := json.Marshal(msg)
 	if err != nil {
 		log.Fatalf("Error marshalling Pub/Sub message: %v", err)
 	}
@@ -97,5 +109,10 @@ func PublishToPubSub(searchRef string, results []search.APIResponse) {
 		log.Fatalf("Error publishing to Pub/Sub: %v", err)
 	}
 
+	var pretty bytes.Buffer
+	if err := json.Indent(&pretty, message, "", "  "); err != nil {
+		log.Printf("Failed to pretty-print message: %v", err)
+	}
 	log.Printf("Published search reference %s to Pub/Sub.", searchRef)
+	log.Printf("Publishing message:\n%s", pretty.String())
 }

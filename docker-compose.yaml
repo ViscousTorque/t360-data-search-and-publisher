@@ -3,9 +3,7 @@ services:
     build: .
     environment:
       VEHICLE_LIST_URL: "https://sandbox-update.transfer360.dev/test_vehicles"
-      SEARCH_APIS: "https://sandbox-update.transfer360.dev/test_search/acmelease, \
-                    https://sandbox-update.transfer360.dev/test_search/fleetcompany,\
-                    https://sandbox-update.transfer360.dev/test_search/hirecompany"
+      SEARCH_APIS: "https://sandbox-update.transfer360.dev/test_search/acmelease,https://sandbox-update.transfer360.dev/test_search/fleetcompany,https://sandbox-update.transfer360.dev/test_search/hirecompany"
       REQUEST_TIMEOUT: "2s"
       GCP_PROJECT_ID: "my-gcp-project"
       PUBSUB_TOPIC: "my-pubsub-topic"
@@ -24,13 +22,13 @@ services:
         echo "Starting Pub/Sub Emulator..."
         gcloud beta emulators pubsub start --host-port=0.0.0.0:8085 &
 
-        # ✅ Wait for the emulator process to start
+        # Wait for the emulator process to start
         until pgrep -f cloud-pubsub-emulator &> /dev/null; do
           echo "Waiting for Pub/Sub Emulator process..."
           sleep 2
         done
 
-        # ✅ Disable authentication
+        # Disable authentication
         export CLOUDSDK_AUTH_DISABLE_CREDENTIALS=1
         export PUBSUB_EMULATOR_HOST=localhost:8085
         export PUBSUB_PROJECT_ID=my-gcp-project
