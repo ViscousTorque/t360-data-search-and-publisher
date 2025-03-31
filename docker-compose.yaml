@@ -8,7 +8,8 @@ services:
       GCP_PROJECT_ID: "my-gcp-project"
       PUBSUB_TOPIC: "my-pubsub-topic"
       PUBSUB_EMULATOR_HOST: "pubsub-emulator:8085"
-      GOOGLE_CLOUD_PROJECT: "my-gcp-project" 
+      GOOGLE_CLOUD_PROJECT: "my-gcp-project"
+      WORKER_COUNT: "10"
     depends_on:
       - pubsub-emulator
 

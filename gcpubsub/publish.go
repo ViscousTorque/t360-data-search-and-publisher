@@ -1,11 +1,10 @@
-package pubsub
+package gcpubsub
 
 import (
 	"bytes"
 	"context"
 	"encoding/json"
 	"log"
-	"os"
 	"time"
 
 	"main/config"
@@ -61,34 +60,19 @@ func waitForPubSubTopic(ctx context.Context, client *pubsub.Client, topicName st
 }
 
 // PublishToPubSub sends processed data to a Pub/Sub topic
-func PublishToPubSub(searchRef string, results []search.APIResponse) {
-	ctx := context.Background()
-
-	if config.PubSubEmulatorHost != "" {
-		log.Println("Using Pub/Sub Emulator at:", config.PubSubEmulatorHost)
-		os.Setenv("PUBSUB_EMULATOR_HOST", config.PubSubEmulatorHost)
-	}
-
-	client, err := pubsub.NewClient(ctx, config.GCPProjectID)
-	if err != nil {
-		log.Fatalf("Error creating Pub/Sub client: %v", err)
-	}
-	defer client.Close()
-
+func PublishToPubSub(ctx context.Context, client *pubsub.Client, searchRef string, results []search.APIResponse) error {
 	waitForPubSubTopic(ctx, client, config.PubSubTopic, 10, 2*time.Second)
 
 	hirers, skipped := filterHirerVehicles(results)
-
 	log.Printf("Skipped %d responses", len(skipped))
 
 	if len(hirers) == 0 {
 		log.Println("No valid results to publish.")
-		return
+		return nil
 	}
 
 	var vehicle models.VehicleData
-	err = json.Unmarshal([]byte(hirers[0].Data), &vehicle)
-	if err != nil {
+	if err := json.Unmarshal([]byte(hirers[0].Data), &vehicle); err != nil {
 		log.Fatalf("Invalid VehicleData in APIResponse from %s: %v", hirers[0].Endpoint, err)
 	}
 
@@ -99,13 +83,13 @@ func PublishToPubSub(searchRef string, results []search.APIResponse) {
 
 	message, err := json.Marshal(msg)
 	if err != nil {
-		log.Fatalf("Error marshalling Pub/Sub message: %v", err)
+		log.Fatalf("error marshalling Pub/Sub message: %w", err)
 	}
 
 	topic := client.Topic(config.PubSubTopic)
 	result := topic.Publish(ctx, &pubsub.Message{Data: message})
-	_, err = result.Get(ctx)
-	if err != nil {
+
+	if _, err := result.Get(ctx); err != nil {
 		log.Fatalf("Error publishing to Pub/Sub: %v", err)
 	}
 
@@ -113,6 +97,9 @@ func PublishToPubSub(searchRef string, results []search.APIResponse) {
 	if err := json.Indent(&pretty, message, "", "  "); err != nil {
 		log.Printf("Failed to pretty-print message: %v", err)
 	}
+
 	log.Printf("Published search reference %s to Pub/Sub.", searchRef)
 	log.Printf("Publishing message:\n%s", pretty.String())
+
+	return nil
 }

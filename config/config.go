@@ -73,4 +73,5 @@ var (
 	GCPProjectID       = GetEnv("GCP_PROJECT_ID", "my-gcp-project")
 	PubSubTopic        = GetEnv("PUBSUB_TOPIC", "my-pubsub-topic")
 	PubSubEmulatorHost = GetEnv("PUBSUB_EMULATOR_HOST", "")
+	WorkerCount        = GetEnv("WORKER_COUNT", "5")
 )

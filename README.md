@@ -2,11 +2,13 @@
 
 ## Developer Test: API Data Search and Pub/Sub Publisher
 * QUESTION: what is expected when all endpoints fail to respond within timeout, there is no published positive result
-* TODO: Add another level of concurrency : need to put the list of vrms into a queue and then a worker pool to draw each vrm from the queue and do the send request, this will increase number of concurrent VRM endpoint requests
+* TODO: build test_search mocks for testing, stop using sandbox
 * TODO: add a global rate limiter as a crude way to prevent endpoints from being overwhelmed.
 * TODO: Need to provide mechanism in docker to work on other platforms / arch
-* TODO: build test_search mocks for testing, stop using sandbox
+* TODO: metrics and graceful shutdown on SIGTERMs?
+* TODO: write unittests?
 * TODO: repackage, refactor, refactor, refactor
+* TODO: external queue for resilience, instead of go channel ... asyncd & redis?
 
 ### Objective
 Create a Go application that:
@@ -79,7 +81,7 @@ IDE vs code with relevant plugins:
         * https://pkg.go.dev/cloud.google.com/go/pubsub
 
 ## Testing on dev desktop
-docker compose up --build
+docker compose up --build --abort-on-container-exit
 
 ## Run with go for local testing
 Run the fake sub and then then the go app
